@@ -1,0 +1,91 @@
+using Library_Management.Models;
+using Library_Management.Repositories;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+
+namespace Library_Management.Controllers
+{
+	[Route("api/[controller]")]
+	[ApiController]
+	public class BooksController : ControllerBase
+	{
+		private readonly BookRepository _bookRepository;
+
+		public BooksController(BookRepository bookRepository)
+		{
+			_bookRepository = bookRepository;
+		}
+
+		// POST: api/books/addbook
+		[HttpPost("addbook")]
+		public IActionResult AddBook([FromBody] Book book)
+		{
+			if (book == null)
+				return BadRequest("Invalid Book Data");
+
+			if (book.AvailableCopies > book.TotalCopies)
+				return BadRequest("AvailableCopies cannot exceed TotalCopies");
+
+			var existingBook = _bookRepository.GetBookByISBN(book.ISBN);
+
+			if (existingBook != null)
+				return BadRequest("Book with this ISBN already exists.");
+
+			var result = _bookRepository.AddBook(book);
+
+			return Ok(result);
+		}
+
+		// GET: api/books/getallbooks
+		[HttpGet("getallbooks")]
+		public IActionResult GetAllBooks()
+		{
+			var books = _bookRepository.GetAllBooks();
+
+			return Ok(books);
+		}
+
+		// GET: api/books/getbookbyid/1
+		[HttpGet("getbookbyid/{id}")]
+		public IActionResult GetBookById(int id)
+		{
+			var book = _bookRepository.GetBookById(id);
+
+			if (book == null)
+				return NotFound("Book Not Found");
+
+			return Ok(book);
+		}
+
+		// GET: api/books/getbookbyisbn/12345
+		[HttpGet("getbookbyisbn/{isbn}")]
+		public IActionResult GetBookByISBN(string isbn)
+		{
+			var book = _bookRepository.GetBookByISBN(isbn);
+
+			if (book == null)
+				return NotFound("Book Not Found");
+
+			return Ok(book);
+		}
+
+		
+
+
+		// GET: api/books/checkavailability/1
+		[HttpGet("checkavailability/{bookId}")]
+		public IActionResult CheckAvailability(int bookId)
+		{
+			bool isAvailable = _bookRepository.CheckAvailability(bookId);
+
+			return Ok(new
+			{
+				BookId = bookId,
+				IsAvailable = isAvailable
+			});
+		}
+
+	
+
+	}
+}
